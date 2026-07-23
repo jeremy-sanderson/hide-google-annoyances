@@ -66,6 +66,8 @@ jobs:
               with:
                   tag_name: v${{ steps.version.outputs.current }}
                   name: v${{ steps.version.outputs.current }}
+                  body: |
+                      See [Loading the unpacked extension](https://github.com/${{ github.repository }}/blob/main/README.md#loading-the-unpacked-extension) in the README for install instructions.
                   generate_release_notes: true
                   files: |
                       ${{ steps.package.outputs.chrome_artifact }}

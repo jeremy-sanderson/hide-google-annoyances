@@ -46,10 +46,26 @@ Other scripts:
 │       └── useSyncStorage.ts             # React hook wrapping storage.ts
 ```
 
-## Loading the unpacked extension in Chrome
+## Loading the unpacked extension
 
-1. `npm install && npm run build`
-2. Visit `chrome://extensions`, enable Developer mode.
-3. "Load unpacked" → select `.output/chrome-mv3`.
-4. Open Gmail, Docs, or Sheets — the Upgrade button should be gone. Toggle it
+Grab a build either by downloading the zip from the
+[Releases page](https://github.com/jeremy-sanderson/hide-google-annoyances/releases)
+and unzipping it, or by building locally with `npm install && npm run build`
+(Chrome) / `npm run build:firefox` (Firefox). Either way you end up with an
+unpacked extension directory to point the browser at.
+
+### Chrome
+
+1. Visit `chrome://extensions`, enable Developer mode.
+2. "Load unpacked" → select the unzipped folder (or `.output/chrome-mv3` for
+   a local build).
+3. Open Gmail, Docs, or Sheets — the Upgrade button should be gone. Toggle it
    back on from the extension's popup if needed.
+
+### Firefox
+
+1. Visit `about:debugging#/runtime/this-firefox`.
+2. "Load Temporary Add-on…" → select `manifest.json` inside the unzipped
+   folder (or `.output/firefox-mv2` for a local build).
+3. Note that temporary add-ons are removed when Firefox restarts; reload them
+   the same way after each restart.
