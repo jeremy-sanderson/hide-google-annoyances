@@ -1,5 +1,6 @@
 export const STORAGE_KEYS = {
   hideUpgradeEnabled: "hideUpgradeEnabled",
+  hideGeminiEnabled: "hideGeminiEnabled",
 } as const;
 
 export const DEFAULTS: Record<
@@ -7,6 +8,7 @@ export const DEFAULTS: Record<
   boolean
 > = {
   [STORAGE_KEYS.hideUpgradeEnabled]: true,
+  [STORAGE_KEYS.hideGeminiEnabled]: true,
 };
 
 export async function getBoolean(

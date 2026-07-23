@@ -205,6 +205,45 @@ injection that would run on every website the user visits.
   popup toggle, and spot-check Calendar/Drive (untested here) since they
   share the same gb_ bar as Gmail.
 
+## Addendum: hiding the Gemini entry-point button
+
+The Gemini "star"/sparkle icon sits immediately to the left of the Upgrade
+button in the same shared toolbar row on both surfaces, so the exact same
+structural hide-target rule applies unchanged. Verified live via Playwright
+on Gmail, a sample Doc, and a sample Sheet.
+
+The one real difference: this button is icon-only (no visible text), so it
+can't be matched on trimmed `textContent` like "Upgrade" — it's matched on
+`aria-label` instead:
+
+- Gmail: `<button aria-label="Ask Gemini" class="VYBDae-JX-I ...">`, parent
+  chain `span[data-is-tooltip-wrapper] > div.Zmxtcf.ADOx3c > div.gb_v` (same
+  `gb_v` toolbar row as the Upgrade button, 5 children, `display: flex`).
+- Docs/Sheets (identical structure on both, same Workspace editor
+  framework): `<button aria-label="Try Gemini"
+class="...appsElementsSidekickAuroraEntryPointButton">`, nested under
+  `div.appsElementsSidekickAuroraEntryPointRoot`, several single-child
+  wrappers up, then `div.docs-titlebar-buttons` (9 children, `display:
+flex`) — the same toolbar row the Upgrade button lives in.
+
+Implementation (`src/utils/hideGeminiButton.ts`) matches `aria-label` against
+an exact set (`"Ask Gemini"`, `"Try Gemini"`) rather than a loose substring
+match, for the same reason the Upgrade button uses exact text: avoids
+accidentally hiding unrelated Gemini-labeled controls elsewhere on the page
+(e.g. in-canvas "Help me write" affordances) that don't share this toolbar
+structure. The shared ancestor-walk and hide/restore mechanics were factored
+out into `src/utils/toolbarButtonHider.ts` so both features (and any future
+one) reuse the same verified logic instead of duplicating it.
+
+Live-verified: on Sheets, hiding the button shrank
+`docs-titlebar-buttons`'s rendered width from 493px to 449px (exactly the
+icon button's width) with no residual gap; on Gmail, a before/after
+screenshot confirmed the sparkle icon disappears and Settings sits directly
+next to Upgrade.
+
+Same locale caveat as the Upgrade button: `"Ask Gemini"` / `"Try Gemini"`
+are English-locale specific.
+
 ## Known risks / things that could break this later
 
 - The structural hide-target rule (parent has >1 children + flex/grid
