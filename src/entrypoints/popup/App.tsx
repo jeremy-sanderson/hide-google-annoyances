@@ -4,7 +4,7 @@ import { DEFAULTS, STORAGE_KEYS } from "@/utils/storage";
 export default function App() {
   return (
     <main className="w-80 px-4 py-4 flex flex-col gap-2">
-      <h1 className="text-base font-semibold mb-1">Hide Google Upgrade</h1>
+      <h1 className="text-base font-semibold mb-1">Hide Google Annoyances</h1>
       <Toggle
         storageKey={STORAGE_KEYS.hideUpgradeEnabled}
         label="Hide Upgrade button"

@@ -1,8 +1,8 @@
-# Hide Google Upgrade
+# Hide Google Annoyances
 
 A browser extension (WXT + React + TypeScript) that hides the Gemini
-"Upgrade" CTA button Google injects into Gmail, Docs, Sheets, and other
-Google Workspace pages.
+"Upgrade" CTA button and the Gemini entry-point button Google injects into
+Gmail, Docs, Sheets, Drive, and other Google Workspace pages.
 
 See `RESEARCH.md` for the DOM research behind the approach and the
 implementation plan.
