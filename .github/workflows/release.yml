@@ -53,8 +53,9 @@ jobs:
               id: package
               run: |
                   version="${{ steps.version.outputs.current }}"
-                  chrome_artifact="chrome-extension-template-v${version}-chrome.zip"
-                  firefox_artifact="chrome-extension-template-v${version}-firefox.zip"
+                  repo_name="${GITHUB_REPOSITORY#*/}"
+                  chrome_artifact="${repo_name}-v${version}-chrome.zip"
+                  firefox_artifact="${repo_name}-v${version}-firefox.zip"
                   (cd .output/chrome-mv3 && zip -r "../../${chrome_artifact}" .)
                   (cd .output/firefox-mv2 && zip -r "../../${firefox_artifact}" .)
                   echo "chrome_artifact=${chrome_artifact}" >> "$GITHUB_OUTPUT"

@@ -2,7 +2,7 @@
   "name": "hide-google-annoyances",
   "description": "Hides Google's Gemini 'Upgrade' upsell CTA and the Gemini entry-point button on Gmail, Docs, Sheets, Drive, and other Google Workspace pages.",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.3.1",
   "type": "module",
   "scripts": {
     "dev": "wxt",
