@@ -150,6 +150,34 @@ describe("hideUpgradeButtons", () => {
     expect(geminiButton.style.display).toBe("");
   });
 
+  it("hides the shared wrapper even when it also contains an already-hidden duplicate button", () => {
+    // Reproduces a real Drive quirk: Google renders a second, narrower
+    // "Upgrade" button (icon-only, for smaller viewports) inside the same
+    // per-item wrapper as the visible one, already `display: none` at the
+    // current width. That duplicate must not trip the "other controls"
+    // guard and force an unnecessary fallback — the guard is about
+    // visible controls the user would lose, not markup that Google itself
+    // already hid.
+    document.body.innerHTML = `
+      <div class="gb_v" style="display: block">
+        <div class="gb_Ae" style="display: table-cell">Help</div>
+        <div class="Iu19ad" style="display: table-cell">
+          <button role="link">Upgrade</button>
+          <button aria-label="Upgrade" style="display: none"></button>
+        </div>
+      </div>
+    `;
+
+    const hidden = hideUpgradeButtons();
+    expect(hidden).toBe(1);
+
+    const wrapper = document.querySelector(".Iu19ad") as HTMLElement;
+    expect(wrapper.style.display).toBe("none");
+
+    const helpCell = document.querySelector(".gb_Ae") as HTMLElement;
+    expect(helpCell.style.display).toBe("table-cell");
+  });
+
   it("does not hide unrelated buttons or partial text matches", () => {
     document.body.innerHTML = `
       <button role="link">Upgrade your plan</button>

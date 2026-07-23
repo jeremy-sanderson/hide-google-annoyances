@@ -33,9 +33,15 @@
 // (e.g. the whole toolbar row) — which then gets marked hidden and stays
 // that way, since the hidden-attribute check makes future scans skip it.
 // The guard against that: a correct per-item target contains exactly one
-// interactive control (the button being hidden). If the best candidate
-// contains any *other* button/link, it's too broad — fall back to hiding
-// just the raw element instead of guessing further up.
+// *visible* interactive control (the button being hidden). If the best
+// candidate contains any other VISIBLE button/link, it's too broad — fall
+// back to hiding just the raw element instead of guessing further up.
+// Already-`display: none` controls don't count: Google renders duplicate
+// responsive variants of the same button for different viewport widths
+// (confirmed live on Drive — the visible "Upgrade" button's own wrapper
+// also contains a second, narrower `aria-label="Upgrade"` button already
+// hidden via `display: none`), and disqualifying the wrapper over an
+// invisible duplicate would defeat the whole point of the structural rule.
 
 const ANCESTOR_SEARCH_DEPTH = 12;
 const MULTI_ITEM_CONTAINER_DISPLAYS = new Set([
@@ -45,11 +51,16 @@ const MULTI_ITEM_CONTAINER_DISPLAYS = new Set([
   "inline-grid",
 ]);
 
-function hasOtherInteractiveControls(node: Element, matched: Element): boolean {
+function hasOtherVisibleInteractiveControls(
+  node: Element,
+  matched: Element
+): boolean {
   for (const control of node.querySelectorAll(
     'button, [role="link"], [role="button"]'
   )) {
-    if (control !== matched) return true;
+    if (control === matched) continue;
+    if (getComputedStyle(control).display === "none") continue;
+    return true;
   }
   return false;
 }
@@ -65,7 +76,7 @@ export function findHideTarget(el: Element): Element {
         MULTI_ITEM_CONTAINER_DISPLAYS.has(parentDisplay) ||
         getComputedStyle(node).display === "table-cell";
       if (isLayoutItemSlot) {
-        return hasOtherInteractiveControls(node, el) ? el : node;
+        return hasOtherVisibleInteractiveControls(node, el) ? el : node;
       }
     }
     node = parent;

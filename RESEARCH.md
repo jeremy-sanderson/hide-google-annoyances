@@ -288,6 +288,45 @@ untouched and still `display: table-cell`; before/after screenshots
 confirmed the Help icon, Settings, and account avatar are all still
 visible and correctly spaced.
 
+### Follow-up: a real race, and a guard that was initially too strict
+
+The table-cell fix alone wasn't the end of it. Live-testing an in-app route
+change on Drive (opening a folder, then navigating back — no full page
+reload, so the extension's `MutationObserver` stays attached across it)
+reproduced a second, real bug: for one `MutationObserver` tick mid-transition,
+a per-item wrapper's `display: table-cell` was transiently unset — Google's
+JS was still reattaching styles/classes to the freshly re-rendered node — so
+the walk kept going past the real per-item slot and matched `gb_v`'s own
+_parent_ as a flex container instead, returning the whole `gb_v` row. That
+target got permanently marked hidden (the hidden-attribute check makes later
+scans skip it), which is exactly the "buttons flash briefly, then the whole
+toolbar vanishes and stays gone" symptom reported after the first fix shipped.
+
+Guard added: a correct per-item target must contain exactly one _visible_
+interactive control — the button being hidden. If the best candidate also
+contains another visible button/link, it's too broad; fall back to hiding
+just the raw matched element instead of guessing further up (walking further
+would only broaden the match, never narrow it). Verified live: instrumented
+the actual `MutationObserver`-driven hider and stress-tested it through
+repeated in-app folder navigation on Drive — `gb_v` was never hidden across
+23+ scans, versus reproducing on effectively every route change beforehand.
+
+That guard then caused its own (smaller) regression: it counts _any_ other
+button inside the candidate, but Google renders a second, narrower
+`aria-label="Upgrade"` button (icon-only, for smaller viewports) inside the
+same per-item wrapper as the visible one — already `display: none` at normal
+widths. The guard saw that hidden duplicate as "another control" and always
+fell back to hiding just the raw `<button>`, which doesn't reclaim the
+wrapper's table-cell width — reproduced live as a persistent gap where the
+Upgrade button used to be, even though the button itself was correctly
+hidden. Fixed by having the guard skip controls that are already
+`display: none` (`hasOtherVisibleInteractiveControls` in
+`toolbarButtonHider.ts`): they're not something the user would actually
+lose by hiding the shared wrapper. Re-verified live afterward that `gb_v`'s
+width correctly drops from 262px to 88px (both buttons' space fully
+reclaimed) while the race-condition stress test above still holds (`gb_v`
+never wrongly hidden across repeated navigation).
+
 ## Known risks / things that could break this later
 
 - The structural hide-target rule now recognizes two layout mechanisms
