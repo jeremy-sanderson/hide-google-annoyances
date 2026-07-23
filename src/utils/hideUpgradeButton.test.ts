@@ -82,6 +82,74 @@ describe("hideUpgradeButtons", () => {
     toolbarButtons.forEach(btn => expect((btn as HTMLElement).style.display).toBe(""));
   });
 
+  it("hides only its own table-cell in Drive-style markup, not the whole row", () => {
+    // Drive's top bar uses a legacy display:table-cell layout rather than
+    // flex/grid — the row container itself computes as `display: block`,
+    // so the flex/grid-only rule would keep walking up and return the
+    // whole row (Help + Gemini + Upgrade together). The fix checks the
+    // candidate node's own display for `table-cell` too.
+    document.body.innerHTML = `
+      <div class="gb_v" style="display: block">
+        <div class="gb_Ae" style="display: table-cell">Help</div>
+        <div class="gb_Ae" style="display: table-cell"></div>
+        <div class="gb_Ae" style="display: table-cell">
+          <button aria-label="Try Gemini"></button>
+        </div>
+        <div class="Iu19ad" style="display: table-cell">
+          <button role="link">Upgrade</button>
+        </div>
+      </div>
+    `;
+
+    const hidden = hideUpgradeButtons();
+    expect(hidden).toBe(1);
+
+    const upgradeCell = document.querySelector(".Iu19ad") as HTMLElement;
+    expect(upgradeCell.style.display).toBe("none");
+
+    const row = document.querySelector(".gb_v") as HTMLElement;
+    expect(row.style.display).toBe("block");
+
+    const otherCells = document.querySelectorAll(".gb_v > .gb_Ae");
+    otherCells.forEach(cell => expect((cell as HTMLElement).style.display).toBe("table-cell"));
+  });
+
+  it("falls back to the raw button instead of a shared ancestor that also contains other controls", () => {
+    // Reproduces a real race found live on Drive: mid an in-app route
+    // change, a per-item wrapper's `display: table-cell` can be
+    // transiently unset for one scan while Google's JS is still
+    // reattaching styles. If the walk then continues past the real
+    // per-item slot, it can land on a much larger ancestor (here, the
+    // whole `gb_v` row) that also contains the Gemini button — hiding it
+    // would take that out too. The candidate must contain ONLY the
+    // matched control to be trusted as the hide target.
+    document.body.innerHTML = `
+      <div class="outer-flex-wrapper" style="display: flex">
+        <div class="gb_v" style="display: block">
+          <div class="gb_Ae">Help</div>
+          <div class="gb_Ae">
+            <button aria-label="Try Gemini"></button>
+          </div>
+          <div class="Iu19ad">
+            <button role="link">Upgrade</button>
+          </div>
+        </div>
+        <div>Other sibling</div>
+      </div>
+    `;
+
+    const hidden = hideUpgradeButtons();
+    expect(hidden).toBe(1);
+
+    const upgradeButton = document.querySelector('button[role="link"]') as HTMLElement;
+    expect(upgradeButton.style.display).toBe("none");
+
+    const row = document.querySelector(".gb_v") as HTMLElement;
+    expect(row.style.display).toBe("block");
+    const geminiButton = document.querySelector('[aria-label="Try Gemini"]') as HTMLElement;
+    expect(geminiButton.style.display).toBe("");
+  });
+
   it("does not hide unrelated buttons or partial text matches", () => {
     document.body.innerHTML = `
       <button role="link">Upgrade your plan</button>

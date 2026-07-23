@@ -7,7 +7,7 @@ export default defineConfig({
   manifest: {
     name: "Hide Google Upgrade Button",
     description:
-      "Hides the 'Upgrade' Gemini upsell button and the Gemini entry-point button on Gmail, Docs, Sheets, and other Google Workspace pages.",
+      "Hides the 'Upgrade' Gemini upsell button and the Gemini entry-point button on Gmail, Docs, Sheets, Drive, and other Google Workspace pages.",
     permissions: ["storage"],
   },
   vite: () => ({

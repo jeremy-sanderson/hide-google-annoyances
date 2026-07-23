@@ -70,6 +70,70 @@ describe("hideGeminiButtons", () => {
     toolbarButtons.forEach(btn => expect((btn as HTMLElement).style.display).toBe(""));
   });
 
+  it("hides only its own table-cell in Drive-style markup, not the whole row", () => {
+    // Drive's top bar uses a legacy display:table-cell layout rather than
+    // flex/grid — the row itself computes as `display: block`, so the
+    // flex/grid-only rule would return the whole row (Help + Gemini +
+    // Upgrade together) instead of the one cell.
+    document.body.innerHTML = `
+      <div class="gb_v" style="display: block">
+        <div class="gb_Ae" style="display: table-cell">Help</div>
+        <div class="gb_Ae" style="display: table-cell">
+          <button aria-label="Try Gemini"></button>
+        </div>
+        <div class="Iu19ad" style="display: table-cell">
+          <button role="link">Upgrade</button>
+        </div>
+      </div>
+    `;
+
+    const hidden = hideGeminiButtons();
+    expect(hidden).toBe(1);
+
+    const geminiCell = document.querySelectorAll(".gb_Ae")[1] as HTMLElement;
+    expect(geminiCell.style.display).toBe("none");
+
+    const row = document.querySelector(".gb_v") as HTMLElement;
+    expect(row.style.display).toBe("block");
+
+    const helpCell = document.querySelectorAll(".gb_Ae")[0] as HTMLElement;
+    expect(helpCell.style.display).toBe("table-cell");
+    const upgradeCell = document.querySelector(".Iu19ad") as HTMLElement;
+    expect(upgradeCell.style.display).toBe("table-cell");
+  });
+
+  it("falls back to the raw button instead of a shared ancestor that also contains other controls", () => {
+    // Mirrors the same race documented in hideUpgradeButton.test.ts: if a
+    // per-item wrapper's table-cell display is transiently unset, the walk
+    // must not land on a broader ancestor (here, the whole `gb_v` row) that
+    // also contains the Upgrade button.
+    document.body.innerHTML = `
+      <div class="outer-flex-wrapper" style="display: flex">
+        <div class="gb_v" style="display: block">
+          <div class="gb_Ae">Help</div>
+          <div class="gb_Ae">
+            <button aria-label="Try Gemini"></button>
+          </div>
+          <div class="Iu19ad">
+            <button role="link">Upgrade</button>
+          </div>
+        </div>
+        <div>Other sibling</div>
+      </div>
+    `;
+
+    const hidden = hideGeminiButtons();
+    expect(hidden).toBe(1);
+
+    const geminiButton = document.querySelector('[aria-label="Try Gemini"]') as HTMLElement;
+    expect(geminiButton.style.display).toBe("none");
+
+    const row = document.querySelector(".gb_v") as HTMLElement;
+    expect(row.style.display).toBe("block");
+    const upgradeButton = document.querySelector('button[role="link"]') as HTMLElement;
+    expect(upgradeButton.style.display).toBe("");
+  });
+
   it("does not hide unrelated buttons or partial aria-label matches", () => {
     document.body.innerHTML = `
       <button aria-label="Ask Gemini about this page">icon</button>

@@ -18,8 +18,10 @@ across three surfaces:
 ## What the DOM actually looks like
 
 Two distinct rendering paths were found — Docs and Sheets share one, Gmail
-uses another. (Not yet directly verified on Calendar/Drive/Chat/Keep, but see
-"Scope" below for why the same approach should cover them.)
+uses another. (Drive was verified separately — see the Drive addendum below,
+since it turned out to use a third layout mechanism. Not yet directly
+verified on Calendar/Chat/Keep, but see "Scope" below for why the same
+approach should cover them.)
 
 ### 1. Gmail — the shared "gb_" universal top bar
 
@@ -202,8 +204,9 @@ injection that would run on every website the user visits.
   Share.
 - Still needed: load the built unpacked extension in Chrome (rather than
   hand-injecting the algorithm via devtools) and confirm end-to-end via the
-  popup toggle, and spot-check Calendar/Drive (untested here) since they
-  share the same gb_ bar as Gmail.
+  popup toggle, and spot-check Calendar (untested here) since it shares the
+  same gb_ bar as Gmail. (Drive was spot-checked separately — see addendum;
+  it does _not_ share Gmail's flex-based gb_ bar layout.)
 
 ## Addendum: hiding the Gemini entry-point button
 
@@ -244,13 +247,55 @@ next to Upgrade.
 Same locale caveat as the Upgrade button: `"Ask Gemini"` / `"Try Gemini"`
 are English-locale specific.
 
+## Addendum: adding Google Drive — a third, table-cell-based layout
+
+The manifest's content-script match pattern (`*://*.google.com/*`) already
+covers `drive.google.com`, so both buttons were technically live there
+already. Verifying Drive specifically surfaced a real bug: Drive's "gb_"
+top bar does **not** use flex/grid at all. Verified live via Playwright
+against `https://drive.google.com/drive/my-drive`.
+
+```
+div.gb_v.gb_ye.Hb-ja-Na   [display: block, 5 children]  ← the toolbar row
+  div.a-OkO9ve-gAsIFc     [display: table-cell]           (icon)
+  div.gb_Ae.gb_ze         [display: table-cell]           "Help / Training / ..."
+  div.gb_Ae.gb_ze         [display: table-cell]           (unlabeled)
+  div.gb_Ae.gb_ze         [display: table-cell]  <button aria-label="Try Gemini">
+  div.Iu19ad-...          [display: table-cell]  <button role=link>Upgrade</button>
+```
+
+Each toolbar item sets `display: table-cell` on **itself**; the row
+(`gb_v`) that contains them is not `display: table` — it computes as plain
+`display: block`, relying on the browser's anonymous-table-box generation
+to lay the `table-cell` children out side by side. The original hide-target
+rule only inspected the **parent's** `display` for `flex`/`grid`/etc., so on
+Drive it never found a qualifying ancestor and walked all the way up,
+returning `gb_v` itself — hiding the _entire_ row (Help + the unlabeled
+button + Gemini + Upgrade together), not just the one control. Confirmed
+this against the live, unpatched algorithm before fixing it.
+
+Fix (`src/utils/toolbarButtonHider.ts`): in addition to checking the
+parent's display, also check the **candidate node's own** display for
+`table-cell` (still gated on the parent having more than one child). That
+resolves to the individual `div.gb_Ae.gb_ze` / `div.Iu19ad-...` cell on
+Drive, exactly mirroring what the flex/grid check already does for Gmail
+and Docs/Sheets — without changing behavior on either of those, since
+neither uses `table-cell` items.
+
+Live-verified after the fix: hiding both buttons shrank `gb_v`'s rendered
+width from 262px to 88px, with the Help button and the other cell
+untouched and still `display: table-cell`; before/after screenshots
+confirmed the Help icon, Settings, and account avatar are all still
+visible and correctly spaced.
+
 ## Known risks / things that could break this later
 
-- The structural hide-target rule (parent has >1 children + flex/grid
-  display) depends on Google keeping the button inside a flex/grid toolbar
-  row — true today on both products, but a future redesign using e.g. CSS
-  Grid `subgrid` or a non-flex layout for the row itself could require
-  revisiting the rule.
+- The structural hide-target rule now recognizes two layout mechanisms
+  (parent `display: flex`/`grid`, or the candidate node's own `display:
+table-cell`) — true today across Gmail, Docs, Sheets, and Drive, but a
+  future redesign using a third layout primitive (e.g. CSS `subgrid`, or a
+  non-flex/non-table row) could require extending the rule again the same
+  way Drive's table-cell layout did.
 - If Google ever renders the label via an icon-only button (no visible
   "Upgrade" text) or changes the tooltip pattern, exact-text matching would
   stop firing. Worth revisiting if the button reappears after an update.

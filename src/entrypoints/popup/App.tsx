@@ -8,13 +8,13 @@ export default function App() {
       <Toggle
         storageKey={STORAGE_KEYS.hideUpgradeEnabled}
         label="Hide Upgrade button"
-        description="Removes the Gemini 'Upgrade' CTA from Gmail, Docs, Sheets, and other Google pages."
+        description="Removes the Gemini 'Upgrade' CTA from Gmail, Docs, Sheets, Drive, and other Google pages."
         defaultEnabled={DEFAULTS[STORAGE_KEYS.hideUpgradeEnabled]}
       />
       <Toggle
         storageKey={STORAGE_KEYS.hideGeminiEnabled}
         label="Hide Gemini button"
-        description="Removes the Gemini (star) button from the top-right corner on Gmail, Docs, and Sheets."
+        description="Removes the Gemini (star) button from the top-right corner on Gmail, Docs, Sheets, and Drive."
         defaultEnabled={DEFAULTS[STORAGE_KEYS.hideGeminiEnabled]}
       />
     </main>
