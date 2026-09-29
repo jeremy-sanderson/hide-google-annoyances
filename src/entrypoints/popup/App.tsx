@@ -17,6 +17,12 @@ export default function App() {
         description="Removes the Gemini (star) button from the top-right corner on Gmail, Docs, Sheets, and Drive."
         defaultEnabled={DEFAULTS[STORAGE_KEYS.hideGeminiEnabled]}
       />
+      <Toggle
+        storageKey={STORAGE_KEYS.hideDocsBannersEnabled}
+        label="Hide Docs banners"
+        description="Removes the promo banners (e.g. Gemini ads) shown above the document in Google Docs."
+        defaultEnabled={DEFAULTS[STORAGE_KEYS.hideDocsBannersEnabled]}
+      />
     </main>
   );
 }
