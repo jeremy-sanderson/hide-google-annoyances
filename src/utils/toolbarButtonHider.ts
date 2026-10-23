@@ -95,10 +95,23 @@ export function hideMatchingButtons(
     .forEach(el => {
       if (!isControl(el)) return;
       const target = findHideTarget(el) as HTMLElement;
-      if (target.hasAttribute(hiddenAttr)) return;
+      // Re-assert the hide on every scan rather than trusting the marker
+      // attribute alone. Google's "persistent entry point" framework
+      // (`data-pep-container`) periodically re-renders these promo
+      // containers and wipes the inline `display: none` we set while
+      // leaving unrelated attributes — including our own marker —
+      // untouched, so a target can still carry `hiddenAttr` yet be visible
+      // again (confirmed live in Sheets). Keying only off the marker meant
+      // we skipped it forever and the button reappeared. Instead we re-hide
+      // whenever the inline display isn't already `none`, and only the
+      // first hide sets the marker / counts toward the return value so
+      // repeated scans stay idempotent.
+      if (target.style.getPropertyValue("display") === "none") return;
       target.style.setProperty("display", "none", "important");
-      target.setAttribute(hiddenAttr, "true");
-      hidden++;
+      if (!target.hasAttribute(hiddenAttr)) {
+        target.setAttribute(hiddenAttr, "true");
+        hidden++;
+      }
     });
   return hidden;
 }
@@ -137,9 +150,18 @@ export function startButtonHider(
     scheduled = true;
     requestAnimationFrame(scan);
   });
+  // Watch attribute changes as well as childList: Google re-renders the
+  // promo container in place and clears the inline `style` we set (rather
+  // than detaching and re-adding the node), which is an attribute mutation
+  // only. Without this filter a style-wipe would never trigger a rescan and
+  // the button would stay visible until some unrelated childList change
+  // happened to wake us. Scoped to `style` to keep the rAF-coalesced scan
+  // from firing on every class churn in the editor.
   observer.observe(document.documentElement, {
     childList: true,
     subtree: true,
+    attributes: true,
+    attributeFilter: ["style"],
   });
 
   return {

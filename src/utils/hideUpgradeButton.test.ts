@@ -178,6 +178,42 @@ describe("hideUpgradeButtons", () => {
     expect(helpCell.style.display).toBe("table-cell");
   });
 
+  it("re-hides a target whose inline display was wiped while our marker survived", () => {
+    // Reproduces the live Sheets regression: Google's persistent-entry-point
+    // framework re-renders #workspace-onegoogle-pep-container in place,
+    // clearing the inline `display: none` we set (leaving style="") but
+    // leaving our data-upgrade-hidden marker intact. The button becomes
+    // visible again, and keying the skip off the marker alone meant we
+    // never re-hid it.
+    document.body.innerHTML = `
+      <div class="docs-titlebar-buttons" style="display: flex">
+        <button>Comment</button>
+        <div id="workspace-onegoogle-pep-container">
+          <button role="link">Upgrade</button>
+        </div>
+        <button>Avatar</button>
+      </div>
+    `;
+
+    const container = document.querySelector(
+      "#workspace-onegoogle-pep-container"
+    ) as HTMLElement;
+
+    expect(hideUpgradeButtons()).toBe(1);
+    expect(container.style.display).toBe("none");
+    expect(container.getAttribute("data-upgrade-hidden")).toBe("true");
+
+    // Google re-renders the container, wiping our inline style but keeping
+    // the marker attribute.
+    container.removeAttribute("style");
+    expect(container.style.display).toBe("");
+
+    // Next scan must re-assert the hide despite the surviving marker.
+    hideUpgradeButtons();
+    expect(container.style.display).toBe("none");
+    expect(container.getAttribute("data-upgrade-hidden")).toBe("true");
+  });
+
   it("does not hide unrelated buttons or partial text matches", () => {
     document.body.innerHTML = `
       <button role="link">Upgrade your plan</button>
