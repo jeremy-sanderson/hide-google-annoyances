@@ -195,9 +195,7 @@ describe("hideUpgradeButtons", () => {
       </div>
     `;
 
-    const container = document.querySelector(
-      "#workspace-onegoogle-pep-container"
-    ) as HTMLElement;
+    const container = document.querySelector("#workspace-onegoogle-pep-container") as HTMLElement;
 
     expect(hideUpgradeButtons()).toBe(1);
     expect(container.style.display).toBe("none");

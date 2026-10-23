@@ -32,7 +32,7 @@ export function onBooleanChanged(
     area: chrome.storage.AreaName
   ) => {
     if (area !== "sync" || !(key in changes)) return;
-    const next = changes[key].newValue;
+    const next = changes[key]?.newValue;
     cb(typeof next === "boolean" ? next : defaultValue);
   };
   chrome.storage.onChanged.addListener(listener);

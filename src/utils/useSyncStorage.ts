@@ -18,7 +18,7 @@ export function useSyncStorage<T>(
       area: chrome.storage.AreaName
     ) => {
       if (area === "sync" && key in changes) {
-        setValue(changes[key].newValue as T);
+        setValue(changes[key]?.newValue as T);
       }
     };
     chrome.storage.onChanged.addListener(onChanged);
